@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="demo.css">
 <script src="d3.min.js" charset="utf-8"></script>
 <script src="dagre-d3.js"></script>
+<script src="diag.js"></script>
 
 
 <style id="css">
@@ -45,10 +46,6 @@
     stroke-width: 1px;
   }
 
-  /* g.type-normal>rect {
-    fill: #e6f4f8;
-  } */
-
   g.type-init>rect {
     fill: rgba(0, 91, 252, 0.4);
   }
@@ -73,40 +70,46 @@
     fill: #E93A3A;
 
   }
+
   g.type-freeze>rect {
     fill: #f2f3f7;
   }
+
   .type-freeze text {
     fill: #999999;
   }
+  #myMenu{
+    position: absolute;
+    display: none;
+    width: 100px;
+    height: 100px;
+    background: #999999;
+  }
 </style>
 
-<svg id="svg-canvas" width=960 height=900></svg>
+<svg id="svgCanvas" width=960 height=900></svg>
+<ul id="myMenu">
+  <li>xx</li>
+  <li>xx</li>
+</ul>
 
 <script id="js">
-  // Create the input graph
-  var g = new dagreD3.graphlib.Graph()
-    .setGraph({})
-    .setDefaultEdgeLabel(function () { return {}; });
-
-  // Here we"re setting nodeclass, which is used by our custom drawNodes function
-  // below.
   var state = [
-    { label: 'V1\n数据同步', class: 'type-suss' },
-    { label: 'V2\nhive-sql', class: 'type-suss' },
-    { label: 'V3\nspark-sql', class: 'type-init' },
-    { label: 'V4\nshell', class: 'type-ready' },
-    { label: 'V5\npython', class: 'type-fail' },
-    { label: 'V6\n虚节点', class: 'type-suss' },
-    { label: 'V7\nspark-sql', class: 'type-suss' },
-    { label: 'V8\nshell', class: 'type-freeze' },
-    { label: 'V9\n数据同步', class: 'type-suss' },
-    { label: 'V10\nshell', class: 'type-queue' },
-    { label: 'V11\nspark-sql', class: 'type-run' },
-    { label: 'V12\nspark-sql', class: 'type-suss' },
-    { label: 'V13\n虚节点', class: 'type-init' },
-    { label: 'V14\n数据同步', class: 'type-fail' },
-    { label: 'V15\nhive-sql', class: 'type-freeze' },
+    { id: 1, label: 'V1\n数据同步', class: 'type-suss' },
+    { id: 2, label: 'V2\nhive-sql', class: 'type-suss' },
+    { id: 3, label: 'V3\nspark-sql', class: 'type-init' },
+    { id: 4, label: 'V4\nshell', class: 'type-ready' },
+    { id: 5, label: 'V5\npython', class: 'type-fail' },
+    { id: 6, label: 'V6\n虚节点', class: 'type-suss' },
+    { id: 7, label: 'V7\nspark-sql', class: 'type-suss' },
+    { id: 8, label: 'V8\nshell', class: 'type-freeze' },
+    { id: 9, label: 'V9\n数据同步', class: 'type-suss' },
+    { id: 10, label: 'V10\nshell', class: 'type-queue' },
+    { id: 11, label: 'V11\nspark-sql', class: 'type-run' },
+    { id: 12, label: 'V12\nspark-sql', class: 'type-suss' },
+    { id: 13, label: 'V13\n虚节点', class: 'type-init' },
+    { id: 14, label: 'V14\n数据同步', class: 'type-fail' },
+    { id: 0, label: 'V15\nhive-sql', class: 'type-freeze' },
   ]
   var edg = [
     { start: 1, end: 4, option: {} },
@@ -124,109 +127,30 @@
     { start: 1, end: 13, option: {} },
     { start: 0, end: 1, option: {} }
   ]
-  var option = { arrowhead: "vee" }
-  var statePoint = 1
-  var staetPointLast = 1;
-  for (let i in state) { //画点
-    let el = state[i]
-    if (i * 1.0 === statePoint) {
-      let style = el.class === 'type-suss' ? "stroke: #35b34a; stroke-width: 1px;" : "stroke:#f15533; stroke-width: 1px;"
-      g.setNode(i, {
-        id: i,
-        label: el.label,
-        class: el.class,
-        style: style,
-      });
-    } else {
-      g.setNode(i, {
-        id: i,
-        label: el.label,
-        class: el.class,
-      });
-    }
-  }
+  var statePoint = 1; // 当前选中的点
+  diagGraph.init(statePoint, state, edg); //创建关系图
 
-  g.nodes().forEach(function (v) {
-    var node = g.node(v);
-    // Round the corners of the nodes
-    node.rx = node.ry = 5;
-  });
-
-  // Set up edges, no special attributes.
-  function drawEdg(statePoint) {
-    for (let i in edg) { // 画连线
-      let el = edg[i]
-      if (el.start === statePoint || el.end === statePoint) {
-        g.setEdge(el.start, el.end, {
-          style: "stroke: #84daf1; fill: none;",
-          arrowheadStyle: "fill: #84daf1;stroke: #84daf1;",
-          arrowhead: 'vee'
-        });
-      } else {
-        g.setEdge(el.start, el.end, {
-          arrowhead: 'vee'
-        });
-      }
-    }
-  }
-  drawEdg(statePoint);
-
-  // Create the renderer
-  var render = new dagreD3.render();
-
-  // Set up an SVG group so that we can translate the final graph.
-  var svg = d3.select("svg"),
-    svgGroup = svg.append("g"),
-    inner = svg.select("g");
-  // console.log(svg)
-
-  // Set up zoom support
-  var zoom = d3.zoom().on("zoom", function () {
-    inner.attr("transform", d3.event.transform);
-  });
-  svg.call(zoom);
-
-  // Run the renderer. This is what draws the final graph.
-  render(d3.select("svg g"), g);
-
-  // Center the graph
-  // var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
-  // svgGroup.attr("transform", "translate(" + xCenterOffset + ", 20)");
-  // svg.attr("height", g.graph().height + 40);
-
-  var initialScale = 1;
-  svg.call(zoom.transform, d3.zoomIdentity.translate((svg.attr("width") - g.graph().width * initialScale) / 2, 20).scale(initialScale));
-
-
-  var svgCanvas = document.getElementById('svg-canvas');
-  svgCanvas.addEventListener('mouseover', function (e) {
-    if (e.target.tagName === 'rect') {
-      var NS = 'http://www.w3.org/2000/svg';
-      var rect = document.createElementNS(NS, 'rect');
-      rect.textContent = '+';
-      rect.setAttribute('fill', '');
-      e.target.appendChild(rect)
-    }
-  })
+  var svgCanvas = document.getElementById('svgCanvas'); //绑定事件鼠标点击
   svgCanvas.addEventListener('click', function (e) {
+    e.preventDefault();
     if (e.target.tagName === 'rect') {
-      if (staetPointLast !== '') {
-        staetPointLast.style.stroke = ''
-        staetPointLast.style.strokeWidth = ''
-      }
-      staetPointLast = e.target
-      e.target.style.stroke = '#f15533'
-      e.target.style.strokeWidth = '1px'
-      console.log(e.target.parentNode)
-      statePoint = 1;
-      drawEdg(statePoint);
+      diagGraph.changePoint(e.target.parentNode.id);
     }
   })
-// var arr = [1,2,3,4]
-// var max = Math.max(...arr)
-// console.log(max)
 
-  // svg.attr('height', g.graph().height * initialScale + 40);
+
+  var myMenu = document.getElementById("myMenu"); //鼠标右键
+  svgCanvas.addEventListener("contextmenu", (event) => { //鼠标右击事件
+    event.preventDefault();
+    if (event.target.tagName === 'rect') {
+      myMenu.style.top = event.clientY + "px";
+      myMenu.style.left = event.clientX + "px";
+      myMenu.style.display = 'block'
+      // this.myMenuShow = true
+    }
+  });
+  document.addEventListener("click", (event) => {
+    myMenu.style.display = 'none'
+  });
+
 </script>
-
-<!-- <script src="demo.js"></script> -->
