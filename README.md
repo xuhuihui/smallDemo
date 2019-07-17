@@ -1,5 +1,5 @@
 # svg
-本项目小demo基本上与svg有关，网址是我demo写的介绍的地方
+本项目小demo基本上下载可看不用npm，网址是我demo写的介绍的地方
 
 The small demo of this project is basically related to SVG. The website is where I wrote about demo.
 
