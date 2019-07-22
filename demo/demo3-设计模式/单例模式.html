@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+  <div id="result" style="white-space: pre;"></div>
+  <script type="text/javascript">
+    // 简易版
+    var EasySingletonIns = {
+      initialized: false,
+      // 实例扩展写在此处：
+      timestamp: undefined,
+      belongTo: undefined,
+      getTimestamp: function () {
+        return EasySingletonIns.timestamp;
+      },
+      getBelongTo: function () {
+        return EasySingletonIns.belongTo;
+      }
+    };
+    var EasySingleton = {
+      getInstance: function () {
+        if (EasySingletonIns.initialized) {
+          return EasySingletonIns;
+        }
+        // 取参数：
+        console.log('EasySingleton arguments:', arguments);
+
+        EasySingletonIns.initialized = true;
+        // 实例扩展也可写在此处：
+        EasySingletonIns.timestamp = new Date().getTime();
+        EasySingletonIns.belongTo = 'EasySingleton';
+
+        return EasySingletonIns;
+      }
+    };
+
+    // 进阶版
+    var AdvancedSingleton = (function () {
+      var ins = null;
+      return function () {
+        if (ins) {
+          return ins;
+        }
+        if (!(this instanceof AdvancedSingleton)) {
+          return new AdvancedSingleton();
+        }
+        // 取参数：
+        console.log('AdvancedSingleton arguments:', arguments);
+        function Inner() {
+          // 实例扩展写在此处：
+          this.timestamp = new Date().getTime();
+          this.belongTo = 'AdvancedSingleton @ constructor'; // 试试注释掉这行，看日志变化
+        }
+        Inner.prototype = this.constructor.prototype;
+        // 原型扩展也可写在此处：
+        // ......
+
+        ins = new Inner();
+        return ins;
+      };
+    })();
+    // 原型扩展写在此处：
+    AdvancedSingleton.prototype.getTimestamp = function () {
+      return this.timestamp;
+    };
+    AdvancedSingleton.prototype.getBelongTo = function () {
+      return this.belongTo;
+    }
+    AdvancedSingleton.prototype.belongTo = 'AdvancedSingleton @ prototype';
+    AdvancedSingleton.getInstance = function () {
+      // 动态参数：（另外，针对只支持es3语法的浏览器的bind方法是没有的，需要自己实现，不在此处展开）
+      var args = [null];
+      return new (Function.prototype.bind.apply(AdvancedSingleton, args.concat.apply(args, arguments)))();
+    };
+
+    // 酷炫版（无视构造函数返回非自身实例的情况）
+    function CoolSingletonCreator(fn) {
+      if (typeof fn !== 'function') {
+        throw new Error('CoolSingletonCreator fn param must be function!');
+      }
+      var AdvancedSingletonForCool = (function () {
+        var ins = null;
+        return function () {
+          if (ins) {
+            return ins;
+          }
+          if (!(this instanceof AdvancedSingletonForCool)) {
+            return new AdvancedSingletonForCool();
+          }
+          var args = arguments;
+          function Inner() {
+            fn.apply(this, args);
+          }
+
+          Inner.prototype = this.constructor.prototype;
+          ins = new Inner();
+          return ins;
+        };
+      })();
+      AdvancedSingletonForCool.prototype = fn.prototype;
+      AdvancedSingletonForCool.getInstance = function () {
+        // 动态参数：（另外，针对只支持es3语法的浏览器的bind方法是没有的，需要自己实现，不在此处展开）
+        var args = [null];
+        return new (Function.prototype.bind.apply(AdvancedSingletonForCool, args.concat.apply(args, arguments)))();
+      };
+      return AdvancedSingletonForCool;
+    }
+    var MyFn = function () {
+      // 取参数：
+      console.log('MyFn arguments:', arguments);
+      // 实例扩展写在此处：
+      this.timestamp = new Date().getTime();
+      this.belongTo = 'MyFn @ constructor'; // 试试注释掉这行，看日志变化
+    };
+    // 原型扩展写在此处：
+    MyFn.prototype.getTimestamp = function () {
+      return this.timestamp;
+    }
+    MyFn.prototype.getBelongTo = function () {
+      return this.belongTo;
+    }
+    MyFn.prototype.belongTo = 'MyFn @ prototype';
+
+    var MyFnSingleton = CoolSingletonCreator(MyFn);
+
+
+    // 下面开始验证
+    var arr = [EasySingleton, AdvancedSingleton, MyFnSingleton];
+    for(var m = 0; m < arr.length; m++) {
+      var Singleton = arr[m];
+      var SingletonVersion = null;
+      switch (m) {
+        case 0:
+          SingletonVersion = '简易版';
+          break;
+        case 1:
+          SingletonVersion = '进阶版';
+          break;
+        case 2:
+          SingletonVersion = '酷炫版';
+          break;
+      }
+      console.log('下面是' + SingletonVersion + '的日志：');
+      var insArr = [];
+      for(var i = 0; i < 2; i++) {
+        insArr.push(Singleton.getInstance('run Singleton.getInstance'));
+        if (typeof Singleton === 'function') {
+          insArr.push(new Singleton('run new Singleton()'));
+          insArr.push(Singleton('run Singleton()'));
+        }
+      }
+      var resultStrArr = [];
+      var allInsSame = undefined;
+      var allInsOfSingleton = undefined;
+      for(var j = 0; j < insArr.length; j++) {
+        var ins = insArr[j];
+        resultStrArr.push('【' + (
+            typeof Singleton === 'function'
+              ? (
+                j % 3 === 0
+                  ? 'Singleton.getInstance方式'
+                  : (j % 3 === 1 ? 'new Singleton()方式' : 'Singleton()方式')
+              )
+              : 'Singleton.getInstance方式'
+          ) + '】获得的'
+          + '实例' + j + '的timestamp值为：' + ins.getTimestamp() + '且belongTo的值为：' + ins.getBelongTo());
+        if (j === 0) {
+          allInsSame = false;
+          allInsOfSingleton = false;
+        } else {
+          var lastIns = insArr[j - 1];
+          if (lastIns === ins) {
+            allInsSame = true;
+          } else {
+            break;
+          }
+          if ((typeof Singleton === 'function' && ins instanceof Singleton && (j % 3 === 2 ? ins instanceof MyFn : true)) || (typeof Singleton !== 'function' && ins === EasySingletonIns)) {
+            allInsOfSingleton = true;
+          } else {
+            break;
+          }
+        }
+      }
+      document.getElementById('result').appendChild(
+        document.createTextNode(
+          '~~~~~~~~华丽丽的分割线~~~~~~~~\n开始验证' + SingletonVersion + '，同时请注意控制台输出'
+          + '\n总共有' + insArr.length + '个实例'
+          + '\n所有实例是否恒等：' + allInsSame
+          + '\n所有实例是否是Singleton的实例：' + allInsOfSingleton + '\n' + resultStrArr.join("\n") + '\n')
+      );
+    }
+  </script>
+</body>
+</html>

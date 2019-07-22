@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+  <script type="text/javascript">
+    /* 第一种，简单工厂模式 */
+    /* 登录警示类 */
+    var LoginAlert = function (text) {
+      this.content = text;
+    };
+    LoginAlert.prototype.setContent = function (text) {
+      this.content = text;
+      // 如果已经show，则还需同步到ui
+    };
+    LoginAlert.prototype.show = function () {
+      // 显示警示框
+      alert('alert:' + this.content);
+    };
+
+    /* 登录确认类 */
+    var LoginConfirm = function (text) {
+      this.content = text;
+    };
+    LoginConfirm.prototype.setContent = function (text) {
+      this.content = text;
+      // 如果已经show，则还需同步到ui
+    };
+    LoginConfirm.prototype.show = function () {
+      // 显示确认框
+      alert('confirm:' + this.content);
+    };
+
+    /* 登录提示框 */
+    var LoginPrompt = function (text) {
+      this.content = text;
+    };
+    LoginPrompt.prototype.setContent = function (text) {
+      this.content = text;
+      // 如果已经show，则还需同步到ui
+    };
+    LoginPrompt.prototype.show = function () {
+      // 显示提示框
+      alert('prompt:' + this.content);
+    };
+    var PopFactory = function (name, text) {
+      switch (name) {
+        case 'alert':
+          return new LoginAlert(text);
+        case 'confirm':
+          return new LoginConfirm(text);
+        case 'prompt':
+          return new LoginPrompt(text);
+      }
+    };
+
+
+    // ##################################################
+    /* 第二种，简单工厂模式 */
+    var createPop = function (type, text) {
+      // 创建一个对象，并对该对象做出扩展
+      var o = new Object();
+      o.content = text;
+      o.show = function () {
+        //  显示相同部分
+        alert(type + ':' + this.content);
+        switch (type) {
+          case 'alert':
+            // 警示框差异部分
+            break;
+          case 'confirm':
+            // 确认框差异部分
+            break;
+          case 'prompt':
+            // 提示框差异部分
+            break;
+        }
+      };
+      return o;
+    };
+
+    var userNameAlert = createPop('alert', '...');
+    userNameAlert.show();
+    var userNameConfirm = createPop('confirm', '...');
+    userNameConfirm.show();
+    var userNamePrompt = createPop('prompt', '...');
+    userNamePrompt.show();
+  </script>
+</body>
+</html>

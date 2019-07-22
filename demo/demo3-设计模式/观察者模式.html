@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+  <button id="addNewObserver">添加观察者</button>
+  <input id="mainCheckbox" type="checkbox"/>发送通知
+  <div id="observersContainer"></div>
+  <script type="text/javascript">
+    var Subject = (function () {
+      // 观察者列表（不是必须的，可以由Subject自己处理）
+      function ObserverList () {
+        this.observerList = [];
+      }
+      ObserverList.prototype.add = function (observer) {
+        return this.observerList.push(observer);
+      };
+      ObserverList.prototype.remove = function (observer) {
+        this.observerList = this.observerList.filter(function (item) {return item !== observer;});
+      };
+      ObserverList.prototype.count = function () {
+        return this.observerList.length;
+      };
+      ObserverList.prototype.get = function (index) {
+        return this.observerList[index];
+      };
+
+      // 主题
+      function Subject () {
+        this.observers = new ObserverList();
+      }
+      Subject.prototype.addObserver = function (observer) {
+        this.observers.add(observer);
+      };
+      Subject.prototype.removeObserver = function (observer) {
+        this.observers.remove(observer);
+      };
+      Subject.prototype.notify = function () {
+        var observerCount = this.observers.count();
+        for (let i = 0; i < observerCount; i++) {
+          var observer = this.observers.get(i);
+          observer.update.apply(observer, arguments);
+        }
+      }
+      return Subject;
+    })();
+  </script>
+  <script type="text/javascript">
+    var subject = new Subject();
+    var controlCheckbox = document.getElementById('mainCheckbox');
+    var addBtn = document.getElementById('addNewObserver');
+    var container = document.getElementById('observersContainer');
+
+    // 推送通知
+    controlCheckbox.addEventListener('click', function () {
+      subject.notify(controlCheckbox.checked);
+    });
+
+    addBtn.addEventListener('click', function () {
+      var checkDom = document.createElement('input');
+      checkDom.type = 'checkbox';
+
+      // 提供一个更新的接口
+      checkDom.update = function (value) {
+        this.checked = value;
+      };
+
+      // 添加观察者
+      subject.addObserver(checkDom);
+
+      container.appendChild(checkDom);
+    });
+  </script>
+</body>
+</html>
